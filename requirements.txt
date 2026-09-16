@@ -1,0 +1,15 @@
+# The +cu124 torch build lives on the PyTorch index, and the matching
+# torch-cluster wheel on the PyG index (the PyPI sdist needs torch at
+# build time and cannot install in the same pass).
+--extra-index-url https://download.pytorch.org/whl/cu124
+--find-links https://data.pyg.org/whl/torch-2.4.0+cu124.html
+
+torch==2.4.1+cu124
+torch-geometric==2.7.0
+torch-cluster==1.6.3
+numpy>=1.24
+scipy>=1.10
+pyyaml>=6.0
+
+# optional:
+# wandb>=0.16        # training logging (enable with wandb: true in configs)

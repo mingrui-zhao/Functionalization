@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+runs/
+results/
+dist/
+wandb/
+*.log
+*.pdf
+# development material, not part of the release
+misc/
+project_page/
+blender_tools/tests/
+# large binary assets shipped as separate downloads, not tracked in git:
+datasets/
+checkpoints/
+annotated_mechanical_parts/
+*.zip

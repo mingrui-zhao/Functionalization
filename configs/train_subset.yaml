@@ -1,0 +1,68 @@
+# Benchmark training configuration: the subset split (excludes fur_001-033,
+# the ShapeNet-sourced models) so PartNet-Mobility evaluation stays zero-shot.
+func_root:        "datasets/furfun/graphs_functional"
+unfunc_root:      "datasets/furfun/graphs_unfunctional"
+geom_root:        "datasets/furfun/part_geometries"
+checkpoint_dir:   "runs/subset"
+split_file:       "datasets/furfun/splits/subset_split.json"
+
+use_motion_heads: true
+motion_format:    "v3_pose_inv"   # pose-invariant 4-way border + 2-way axis sign
+
+# node encoder
+type_emb_dim:        128
+pc_dim:              64
+geom_dim:            32
+edge_dim:            128
+geometry_dropout_p:  0.3
+
+# decoder slots
+max_nodes:           55
+max_free_slots:      4
+use_graph_cond_slots: true
+mirror_p:            0.0     # The delivered grafu_subset_config_1.pt is
+                              # trained WITHOUT flip: on PartNet-Mobility it
+                              # keeps full handle generation/attachment
+                              # fidelity (95.7% coverage vs 93.6% with flip)
+                              # at the cost of -1.2 M1. Set mirror_p 0.5 +
+                              # mirror_axes [0] to reproduce the flip+pin
+                              # variant (grafu_subset_config_2.pt); the label
+                              # remap + pinned matching support it either way.
+require_connected:   true
+
+# losses
+edge_class_weights:  [1.0, 5.0, 5.0, 3.0, 0.2]   # contact/hinge/rail/attached/null
+null_weight:         0.2
+w_anchor:                  0.3
+w_anchor_bbox:             0.3
+use_signed_pair_features:  true
+w_type:               1.0
+w_centroid:           1.0
+w_bbox:               0.5
+w_free_exist:         3.0
+free_exist_pw_floor:  10.0
+w_count:              1.0
+w_handle:         0.0
+w_handle_opp:     0.0
+
+# optimisation
+augment_ratio:    17.0
+epochs:           120
+lr_T_max:         450    # cosine anneal horizon; training stops at `epochs`
+batch_size:       16
+num_workers:      0
+lr:               3.0e-4
+
+# augmentation
+drop_band_early:  [0.30, 0.50]
+drop_band_late:   [0.30, 0.50]
+max_drop_nodes:   4
+edge_preserving_boost: 3.0
+
+# logging
+wandb:            false
+wandb_project:               "functionalization"
+num_vis_samples:  6
+sample_log_every_n_epochs:   25
+num_progress_train_samples:  4
+num_progress_val_samples:    4
