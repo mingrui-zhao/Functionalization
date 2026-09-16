@@ -25,11 +25,12 @@
   .affil, .venue { text-align: center; color: var(--muted); margin: 2px 0; }
   .venue { font-style: italic; color: var(--ink); margin-top: 8px; }
   .links { text-align: center; margin: 24px 0 8px; }
-  .links a { display: inline-block; margin: 5px 5px; padding: 9px 22px;
+  .links a { display: inline-flex; align-items: center; gap: 6px; vertical-align: middle;
+             margin: 5px 5px; padding: 9px 22px;
              border-radius: 24px; background: var(--ink); color: #fff;
              text-decoration: none; font-size: 0.92em; font-weight: 600; }
   .links a:hover { background: var(--accent); }
-  .links .hf-icon { width: 22px; height: 22px; vertical-align: -5px; margin-right: 6px; }
+  .links .link-icon { width: 22px; height: 22px; flex: none; }
   .links .soon { display: inline-block; margin: 5px 5px; padding: 9px 22px;
                  border-radius: 24px; background: transparent; color: var(--ink);
                  border: 1px solid var(--line); font-size: 0.92em; font-weight: 600;
@@ -121,9 +122,9 @@
   <p class="venue">SIGGRAPH Asia 2026</p>
 
   <div class="links">
-    <a href="https://arxiv.org/abs/2605.18010" target="_blank">arXiv</a>
-    <a href="https://github.com/mingrui-zhao/Functionalization" target="_blank" rel="noopener noreferrer">Code</a>
-    <a href="https://huggingface.co/datasets/zmrr/Functionalization" target="_blank" rel="noopener noreferrer" aria-label="Data on Hugging Face"><img class="hf-icon" src="assets/huggingface.svg" width="22" height="22" alt="">Data</a>
+    <a href="https://arxiv.org/abs/2605.18010" target="_blank" rel="noopener noreferrer" aria-label="Paper on arXiv"><img class="link-icon" src="assets/arxiv.svg" width="22" height="22" alt="">arXiv</a>
+    <a href="https://github.com/mingrui-zhao/Functionalization" target="_blank" rel="noopener noreferrer" aria-label="Code on GitHub"><img class="link-icon" src="assets/github.svg" width="22" height="22" alt="">Code</a>
+    <a href="https://huggingface.co/datasets/zmrr/Functionalization" target="_blank" rel="noopener noreferrer" aria-label="Data on Hugging Face"><img class="link-icon" src="assets/huggingface.svg" width="22" height="22" alt="">Data</a>
     <a href="#bibtex">BibTeX</a>
   </div>
 
