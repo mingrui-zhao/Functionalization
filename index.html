@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Functionalization via Structure Completion and Motion Rectification</title>
+<meta name="description" content="Functionalization turns non-functional 3D furniture into physically operable models: graph completion with GraFu, then geometric realization with real hinges and rails.">
+<style>
+  :root { --accent: #1f6f54; --ink: #202124; --muted: #5f6368; --line: #e6e6e2; }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; color: var(--ink); background: #fff; line-height: 1.6;
+         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                      Helvetica, Arial, sans-serif; }
+  .wrap { max-width: 1000px; margin: 0 auto; padding: 56px 22px 90px; }
+  h1 { font-size: clamp(1.6em, 3.6vw, 2.3em); text-align: center;
+       line-height: 1.25; margin: 0 0 18px; font-weight: 700; }
+  h2 { font-size: 1.35em; margin: 56px 0 14px; }
+  .authors { text-align: center; margin: 0 auto 4px; font-size: 1.02em;
+             line-height: 2; max-width: 760px; }
+  .authors .au { white-space: nowrap; margin: 0 3px; display: inline-block; }
+  .authors a, .authors .name { color: var(--accent); text-decoration: none;
+                               font-weight: 600; }
+  .authors a:hover { text-decoration: underline; }
+  .affil, .venue { text-align: center; color: var(--muted); margin: 2px 0; }
+  .venue { font-style: italic; color: var(--ink); margin-top: 8px; }
+  .links { text-align: center; margin: 24px 0 8px; }
+  .links a { display: inline-block; margin: 5px 5px; padding: 9px 22px;
+             border-radius: 24px; background: var(--ink); color: #fff;
+             text-decoration: none; font-size: 0.92em; font-weight: 600; }
+  .links a:hover { background: var(--accent); }
+  .links .hf-icon { width: 22px; height: 22px; vertical-align: -5px; margin-right: 6px; }
+  .links .soon { display: inline-block; margin: 5px 5px; padding: 9px 22px;
+                 border-radius: 24px; background: transparent; color: var(--ink);
+                 border: 1px solid var(--line); font-size: 0.92em; font-weight: 600;
+                 cursor: default; }
+  .links .soon small { font-weight: 400; opacity: 0.65; }
+  figure { margin: 26px 0 0; }
+  figure img { width: 100%; display: block; border-radius: 6px; }
+  figcaption { color: var(--muted); font-size: 0.9em; margin-top: 10px; }
+  .hero img { border-radius: 8px; }
+  .card { border: 1px solid var(--line); border-radius: 10px; padding: 6px; }
+  .lead { font-size: 1.06em; }
+  .video { position: relative; width: 100%; aspect-ratio: 16 / 9;
+           border-radius: 8px; overflow: hidden; background: #000; margin-top: 26px; }
+  .video video { width: 100%; height: 100%; }
+  pre.bibtex { background: #f7f7f5; border: 1px solid var(--line);
+               border-radius: 8px; padding: 16px; overflow-x: auto;
+               font-size: 0.82em; line-height: 1.5; }
+  footer { text-align: center; color: var(--muted); font-size: 0.85em;
+           margin-top: 70px; border-top: 1px solid var(--line); padding-top: 24px; }
+  /* floating hardware progress indicator (transparent, no chrome) */
+  .hw-rail { position: fixed; left: 50%; transform: translateX(-50%);
+             bottom: 4px; z-index: 50; width: min(54vw, 640px);
+             pointer-events: none; }
+  .hw-rail video { width: 100%; display: block; }
+  .snd-toggle { position: fixed; right: 14px; bottom: 14px; z-index: 51;
+                min-width: 34px; height: 34px; border-radius: 18px; padding: 0 10px;
+                border: 1px solid var(--line); background: #fff;
+                opacity: 0.75; cursor: pointer; font-size: 15px;
+                display: flex; gap: 5px; align-items: center; justify-content: center; }
+  .snd-toggle .snd-label { font-size: 12px; }
+  .snd-toggle[hidden] { display: none; }
+  .snd-toggle:hover { opacity: 1; }
+  @media (max-width: 760px) { .hw-rail { display: none; } }
+  /* interactive demo */
+  .demo { display: flex; gap: 14px; margin-top: 20px; padding: 10px;
+          flex-wrap: wrap; }
+  .demo canvas { flex: 1 1 520px; height: 520px; min-width: 300px;
+                 border-radius: 8px; background: #fafaf8; display: block; }
+  .demo-panel { width: 250px; flex: 0 0 250px; display: flex;
+                flex-direction: column; gap: 12px; font-size: 0.92em;
+                max-height: 520px; }
+  .tabbar { display: flex; gap: 4px; }
+  .tab { flex: 1; padding: 7px 2px; border: 1px solid var(--line);
+         border-radius: 8px 8px 0 0; background: #f4f4f1; cursor: pointer;
+         font-weight: 600; font-size: 0.86em; color: var(--muted); }
+  .tab.active { background: #fff; color: var(--accent);
+                border-bottom-color: #fff; }
+  .tabpane { display: none; border: 1px solid var(--line); border-radius: 0 8px 8px 8px;
+             padding: 12px; margin-top: -13px; }
+  .tabpane.active { display: block; }
+  .opt-group { border: 1px solid var(--line); border-radius: 8px; padding: 12px; }
+  .opt-title { font-weight: 700; margin-bottom: 8px; }
+  .opt-group label, .tabpane label { display: block; margin: 6px 0; cursor: pointer;
+                    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .opt-note { color: var(--muted); font-size: 0.85em; margin-top: 8px; line-height: 1.45; }
+  .tag { background: #eef4f1; color: var(--accent); border-radius: 10px;
+         padding: 1px 8px; font-size: 0.78em; font-weight: 600; }
+  #motion { width: 100%; accent-color: var(--accent); }
+  #playBtn { margin-top: 8px; padding: 7px 16px; border-radius: 18px;
+             border: 1px solid var(--line); background: var(--ink); color: #fff;
+             cursor: pointer; font-weight: 600; }
+  #playBtn:hover { background: var(--accent); }
+  @media (max-width: 760px) {
+    .scrolldemo-sticky { flex-direction: column; justify-content: center; }
+    .scrollpane { width: 100%; height: 38vh; }
+    .demo-panel { width: 100%; flex-basis: auto; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>Functionalization via Structure Completion<br>and Motion Rectification</h1>
+
+  <p class="authors">
+    <span class="au"><a href="https://mingrui-zhao.github.io/" target="_blank">Mingrui Zhao</a>,</span>
+    <span class="au"><a href="https://sairajk.github.io/" target="_blank">Sai Raj Kishore Perla</a>,</span>
+    <span class="au"><a href="https://kwang-ether.github.io/" target="_blank">Kai Wang</a>,</span>
+    <span class="au"><a href="https://sauradip.github.io/" target="_blank">Sauradip Nag</a>,</span>
+    <span class="au"><span class="name">Duc Anh Nguyen</span>,</span>
+    <span class="au"><span class="name">Jiayi Peng</span>,</span>
+    <span class="au"><a href="https://suikei-wang.github.io/" target="_blank">Ruiqi Wang</a>,</span>
+    <span class="au"><a href="https://angelxuanchang.github.io/" target="_blank">Angel X. Chang</a>,</span>
+    <span class="au"><a href="https://msavva.github.io/" target="_blank">Manolis Savva</a>,</span>
+    <span class="au"><a href="https://arash-mham.github.io/" target="_blank">Ali Mahdavi-Amiri</a>,</span>
+    <span class="au"><a href="https://www.cs.sfu.ca/~haoz/" target="_blank">Hao Zhang</a></span>
+  </p>
+  <p class="affil">Simon Fraser University &middot; ShanghaiTech University &middot; Augmenta &middot; Alberta Machine Intelligence Institute (Amii)</p>
+  <p class="venue">SIGGRAPH Asia 2026</p>
+
+  <div class="links">
+    <a href="https://arxiv.org/abs/2605.18010" target="_blank">arXiv</a>
+    <a href="https://github.com/mingrui-zhao/Functionalization" target="_blank" rel="noopener noreferrer">Code</a>
+    <a href="https://huggingface.co/datasets/zmrr/Functionalization" target="_blank" rel="noopener noreferrer" aria-label="Data on Hugging Face"><img class="hf-icon" src="assets/huggingface.svg" width="22" height="22" alt="">Data</a>
+    <a href="#bibtex">BibTeX</a>
+  </div>
+
+  <figure class="hero">
+    <img src="teaser.png" alt="Functionalization teaser">
+    <figcaption>
+      A visually plausible cabinet that cannot function: its door has no
+      hinge, its drawer has no rails, and opening the door collides with
+      the side panel. Our neural graph functionalizer (GraFu) completes
+      the functional graph with the missing connectors and parts, and
+      geometric realization installs actual hinges and rails, rectifying
+      the motion so the model becomes physically operable.
+    </figcaption>
+  </figure>
+
+  <h2>Why functionalization?</h2>
+  <p class="lead">
+    Most 3D assets are made to be looked at, not used: doors without
+    hinges, drawers without rails, missing tops and interiors, and
+    human-annotated motions that collide or detach. We introduce
+    <b>functionalization</b>, the task of transforming such models
+    into functional, physically operable counterparts. Our key idea is to
+    treat it as <b>functional graph completion</b>, where labeled part
+    nodes and typed edges (contact, hinge, rail, attached) expose every
+    structural deficiency as a missing node or edge, followed by
+    <b>geometric realization</b> that grounds the predicted graph with
+    real mechanical parts. Because part motion is driven by an installed
+    hinge or rail rather than a virtual axis, erroneous motions are
+    rectified at the same time.
+  </p>
+
+  <h2 id="video">Video</h2>
+  <div class="video">
+    <video controls preload="metadata" src="func_vid.mp4"></video>
+  </div>
+
+  <h2>How it works</h2>
+  <figure class="card">
+    <img src="pipeline.png" alt="Pipeline">
+  </figure>
+  <figcaption>
+    GraFu encodes each part from its category, point cloud, and bounding
+    box, relates parts with a graph transformer over a fully connected
+    topology, and decodes a functionalized graph with a DETR-style slot
+    decoder: per-slot categories and boxes, and per-pair edge types and
+    motion attributes. A geometric fixing stage then snaps hinge and rail
+    templates between the predicted parts.
+  </figcaption>
+
+  <h2>Results</h2>
+  <figure class="card">
+    <img src="qualitative.png" alt="Functionalization gallery">
+  </figure>
+  <figcaption>
+    Dynamic functionalization installs hinges and rails while rectifying
+    motion ranges, axes, connectivity, and collisions (a-g). Static
+    functionalization completes tops, interiors, and handles with
+    user-selectable options (h-j).
+  </figcaption>
+
+  <figure class="card">
+    <img src="result_revised.png" alt="Graph completion results and comparisons">
+  </figure>
+  <figcaption>
+    From a partially labeled input graph (left), GraFu completes the
+    functionalized graph with new nodes and functional edges
+    (highlighted), which grounds the articulated result (Ours). Our
+    method achieves competitive motion-prediction accuracy while reducing
+    collisions and improving connectivity.
+  </figcaption>
+
+  <h2 id="demo">Interactive functionalization demo</h2>
+  <p>
+    Three PartNet-Mobility cabinets, functionalized live in your browser.
+    Pick a cabinet, customize what functionalization adds (top-panel shape,
+    handle style, rail type, hinge type), then drag the slider or press play to operate it.
+    Rotate with the mouse, zoom with the wheel.
+  </p>
+  <div class="demo card">
+    <canvas id="demoCanvas"></canvas>
+    <div class="demo-panel">
+      <div class="tabbar">
+        <button class="tab active" data-pane="paneCab">Cabinet</button>
+        <button class="tab" data-pane="paneTop">Top</button>
+        <button class="tab" data-pane="paneHandle">Handles</button>
+        <button class="tab" data-pane="paneRail" id="railTab">Rails</button>
+      </div>
+      <div class="tabpane active" id="paneCab">
+        <label><input type="radio" name="hcase" value="exterior" checked> Example 1 (C-Hinge)</label>
+        <label><input type="radio" name="hcase" value="flat"> Example 2 (F-Hinge)</label>
+        <label><input type="radio" name="hcase" value="interior"> Example 3 (P-Hinge)</label>
+      </div>
+      <div class="tabpane" id="paneTop">
+        <label><input type="radio" name="topopt" value="orig" checked> Original</label>
+        <label><input type="radio" name="topopt" value="RECTANGLE"> Rectangle <span class="tag">generated</span></label>
+        <label><input type="radio" name="topopt" value="ROUNDED"> Rounded <span class="tag">generated</span></label>
+        <label><input type="radio" name="topopt" value="CHAMFERED"> Chamfered <span class="tag">generated</span></label>
+      </div>
+      <div class="tabpane" id="paneHandle">
+        <label><input type="radio" name="hstyle" value="orig" checked> Original</label>
+        <label><input type="radio" name="hstyle" value="handle3_bar"> Bar</label>
+        <label><input type="radio" name="hstyle" value="handle12_bar"> Slim bar</label>
+        <label><input type="radio" name="hstyle" value="handle16_knob"> Knob</label>
+      </div>
+      <div class="tabpane" id="paneRail">
+        <label><input type="radio" name="railopt" value="CENTER" checked> Center mount</label>
+        <label><input type="radio" name="railopt" value="CORNER"> Corner mount</label>
+      </div>
+      <div class="opt-group" id="msourceGroup"><div class="opt-title">Motion source</div>
+        <label><input type="radio" name="msource" value="ours" checked> Functionalized <span class="tag">ours</span></label>
+        <label><input type="radio" name="msource" value="pmn"> Reference motion</label>
+      </div>
+      <div class="opt-group"><div class="opt-title">Operate</div>
+        <input type="range" id="motion" min="0" max="1000" value="0">
+        <button id="playBtn">&#9654; Play</button>
+      </div>
+    </div>
+  </div>
+
+  <h2 id="bibtex">BibTeX</h2>
+  <pre class="bibtex">@inproceedings{zhao2026functionalization,
+  title={Functionalization via Structure Completion and Motion Rectification},
+  author={Zhao, Mingrui and Perla, Sai Raj Kishore and Wang, Kai and Nag, Sauradip and Nguyen, Duc Anh and Peng, Jiayi and Wang, Ruiqi and Chang, Angel X and Savva, Manolis and Mahdavi-Amiri, Ali and others},
+  booktitle={Proc. SIGGRAPH Asia},
+  year={2026},
+}</pre>
+
+  <footer>Functionalization &middot; SIGGRAPH Asia 2026</footer>
+</div>
+
+<div class="hw-rail"><video id="railVid" src="assets/widget_rail.webm?v=7" muted playsinline preload="auto"></video></div>
+<button id="sndToggle" class="snd-toggle" type="button" title="Enable rail sound" aria-label="Enable rail sound" aria-pressed="false">&#128264; <span class="snd-label">Enable sound</span></button>
+<script defer src="assets/rail-recording.js"></script>
+<script defer src="assets/rail-sound.js"></script>
+
+<script type="importmap">
+{ "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const draco = new DRACOLoader()
+  .setDecoderPath('https://unpkg.com/three@0.160.0/examples/jsm/libs/draco/');
+const loader = new GLTFLoader().setDRACOLoader(draco);
+
+function makeViewer(canvas, { controls = false, camDir = [1.1, -1.6, 0.8] } = {}) {
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  const scene = new THREE.Scene();
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xb0aca4, 1.15));
+  const sun = new THREE.DirectionalLight(0xffffff, 1.6);
+  sun.position.set(3, 5, 4); scene.add(sun);
+  const camera = new THREE.PerspectiveCamera(38, 1, 0.01, 100);
+  const v = { renderer, scene, camera, mixer: null, clips: [], root: null,
+              duration: 1, orbit: null, dirty: true };
+  if (controls) {
+    v.orbit = new OrbitControls(camera, canvas);
+    v.orbit.enableDamping = true;
+    v.orbit.addEventListener('change', () => v.dirty = true);
+  }
+  v.fit = () => {
+    if (!v.root) return;
+    const box = new THREE.Box3().setFromObject(v.root);
+    const c = box.getCenter(new THREE.Vector3());
+    const s = box.getSize(new THREE.Vector3()).length();
+    const d = new THREE.Vector3(...camDir).normalize();
+    camera.position.copy(c).addScaledVector(d, s * 1.05);
+    camera.near = s / 100; camera.far = s * 10;
+    camera.lookAt(c); camera.updateProjectionMatrix();
+    if (v.orbit) { v.orbit.target.copy(c); v.orbit.update(); }
+    v.dirty = true;
+  };
+  v.load = (url) => new Promise(res => loader.load(url, g => {
+    if (v.root) scene.remove(v.root);
+    v.root = g.scene; scene.add(v.root);
+    v.mixer = new THREE.AnimationMixer(v.root);
+    v.clips = g.animations;
+    v.duration = Math.max(0.001, ...v.clips.map(c => c.duration), 0.001);
+    // scrub against the TYPICAL clip length: outlier clips (e.g. a
+    // template's internal 2x-length hydraulic loop) must not compress
+    // the door cycle into half the slider
+    const ds = v.clips.map(c => c.duration).filter(d => d > 0.1).sort((a, b) => a - b);
+    v.cycle = ds.length ? ds[Math.floor(ds.length / 2)] : v.duration;
+    // play only clips near the typical length: outlier internal loops
+    // (e.g. a 2x-length hydraulic clip) run desynced and read as jitter
+    for (const c of v.clips)
+      if (c.duration <= 0.1 || Math.abs(c.duration - v.cycle) < 0.3 * v.cycle)
+        v.mixer.clipAction(c).play();
+    v.mixer.setTime(1e-4); v.fit(); res(v);
+  }));
+  v.setTime = (t) => { if (v.mixer) { v.mixer.setTime(Math.max(1e-4, t)); v.dirty = true; } };
+  v.tick = () => {
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    if (w && h && (canvas.width !== Math.round(w * renderer.getPixelRatio()) ||
+                   canvas.height !== Math.round(h * renderer.getPixelRatio()))) {
+      renderer.setSize(w, h, false);
+      camera.aspect = w / Math.max(1, h); camera.updateProjectionMatrix();
+      v.dirty = true;
+    }
+    if (v.orbit) v.orbit.update();
+    if (v.dirty) { renderer.render(scene, camera); v.dirty = false; }
+  };
+  return v;
+}
+
+/* ------- floating hardware progress widget (whole-page scroll) ------- */
+const railVid = document.getElementById('railVid');
+function pageProgress() {
+  const doc = document.documentElement;
+  const total = doc.scrollHeight - window.innerHeight;
+  return Math.min(1, Math.max(0, window.scrollY / Math.max(1, total)));
+}
+function scrubVid(v, p) {
+  if (v.duration) v.currentTime = Math.min(v.duration - 0.01, p * v.duration);
+}
+function applyScroll() {
+  scrubVid(railVid, pageProgress());
+}
+railVid.addEventListener('loadedmetadata', applyScroll);
+window.addEventListener('scroll', applyScroll, { passive: true });
+window.addEventListener('resize', applyScroll);
+
+/* ------------------- interactive functionalization demo ------------------- */
+const demoV = makeViewer(document.getElementById('demoCanvas'),
+                         { controls: true, camDir: [1.2, -1.5, 0.55] });
+const CASES = { exterior: 'assets/case_exterior.glb?v=14',
+                flat: 'assets/case_flat.glb?v=14',
+                interior: 'assets/case_interior.glb?v=14' };
+
+function opt(name) { return document.querySelector(`input[name=${name}]:checked`).value; }
+const OURS_MOVING = /^slot\d+_(door|drawer)__|^hinge_|^rotation_axis|^rail__/;
+function applyOptions() {
+  if (!demoV.root) return;
+  const top = opt('topopt'), hs = opt('hstyle'), rail = opt('railopt');
+  const pmn = opt('msource') === 'pmn';
+  demoV.root.traverse(o => {
+    const n = o.name;
+    if (n.startsWith('PMN__')) { if (o.parent && !o.parent.name.startsWith('PMN__')) o.visible = pmn; return; }
+    if (pmn) {
+      if (OURS_MOVING.test(n) || n.startsWith('HSTYLE_') || n.startsWith('ORIGHANDLE__')
+          || n.startsWith('TOPSHAPE_') || n.startsWith('CDRW__')) {
+        o.visible = false; return;
+      }
+      if (n.startsWith('RAILV_')) { o.visible = false; return; }
+      return;
+    }
+    if (n.startsWith('CDRW__')) { if (o.parent && !o.parent.name.startsWith('CDRW__')) o.visible = (rail === 'CORNER'); }
+    else if (/^slot\d+_drawer__/.test(n)) { o.visible = (rail !== 'CORNER'); }
+    else if (OURS_MOVING.test(n)) { o.visible = true; }
+    if (n.startsWith('ORIGTOP__'))       o.visible = (top === 'orig');
+    else if (n.startsWith('TOPSHAPE_'))  o.visible = n.startsWith(`TOPSHAPE_${top}`);
+    else if (n.startsWith('ORIGHANDLE__')) o.visible = (hs === 'orig');
+    else if (n.startsWith('HSTYLE_'))    o.visible = n.startsWith(`HSTYLE_${hs}__`);
+    else if (n.startsWith('RAILV_CENTER__') || n.startsWith('RAILV_CORNER__')) {
+      o.visible = true;   // restore after Reference mode hid the node
+      const want = n.startsWith('RAILV_CENTER__') ? (rail === 'CENTER') : (rail === 'CORNER');
+      // hide only this node's own geometry: children (the drawer rides the
+      // rail driver) must stay visible, so use per-mesh materials
+      const meshes = [];
+      if (o.isMesh) meshes.push(o);
+      for (const c of o.children) if (c.isMesh && !c.name.match(/_drawer|handle/i)) meshes.push(c);
+      for (const m of meshes) {
+        if (!m.userData.ownMat) { m.material = m.material.clone(); m.userData.ownMat = true; }
+        m.material.visible = want;
+      }
+    }
+  });
+  for (const sel of document.querySelectorAll('input[name=topopt],input[name=hstyle],input[name=railopt]'))
+    sel.disabled = pmn;
+  demoV.dirty = true;
+}
+const slider = document.getElementById('motion');
+const playBtn = document.getElementById('playBtn');
+let playing = false, playDir = 1;
+function applyMotion() {
+  demoV.setTime((slider.value / 1000) * demoV.cycle * 0.48);
+}
+async function loadCase(key) {
+  await demoV.load(CASES[key]);
+  let hasRail = false, hasCorner = false, hasPmn = false;
+  demoV.root.traverse(o => {
+    if (o.name.startsWith('RAILV_')) hasRail = true;
+    if (o.name.startsWith('RAILV_CORNER')) hasCorner = true;
+    if (o.name.startsWith('PMN__')) hasPmn = true;
+  });
+  document.getElementById('msourceGroup').style.display = hasPmn ? '' : 'none';
+  if (!hasPmn) document.querySelector('input[name=msource][value=ours]').checked = true;
+  document.getElementById('railTab').style.display = hasRail ? '' : 'none';
+  if (!hasRail && document.getElementById('paneRail').classList.contains('active')) {
+    document.querySelector('.tab[data-pane=paneCab]').click();
+  }
+  const cornerRadio = document.querySelector('input[name=railopt][value=CORNER]');
+  cornerRadio.disabled = !hasCorner;
+  if (!hasCorner) document.querySelector('input[name=railopt][value=CENTER]').checked = true;
+  applyOptions(); applyMotion();
+}
+for (const t of document.querySelectorAll('.tab'))
+  t.addEventListener('click', () => {
+    for (const x of document.querySelectorAll('.tab')) x.classList.remove('active');
+    for (const x of document.querySelectorAll('.tabpane')) x.classList.remove('active');
+    t.classList.add('active');
+    document.getElementById(t.dataset.pane).classList.add('active');
+  });
+loadCase('exterior');
+for (const nm of ['hcase', 'topopt', 'hstyle', 'railopt', 'msource'])
+  for (const r of document.querySelectorAll(`input[name=${nm}]`))
+    r.addEventListener('change', e =>
+      nm === 'hcase' ? loadCase(e.target.value) : applyOptions());
+slider.addEventListener('input', () => { playing = false; playBtn.innerHTML = '&#9654; Play'; applyMotion(); });
+playBtn.addEventListener('click', () => {
+  playing = !playing;
+  playBtn.innerHTML = playing ? '&#10074;&#10074; Pause' : '&#9654; Play';
+});
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (playing) {
+    let x = Number(slider.value) + playDir * 6;
+    if (x >= 1000) { x = 1000; playDir = -1; }
+    if (x <= 0) { x = 0; playDir = 1; }
+    slider.value = x; applyMotion();
+  }
+  demoV.tick();
+}
+applyScroll();
+animate();
+</script>
+</body>
+</html>
